@@ -1,0 +1,61 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>地圖</title>
+
+    <!-- Common Tool -->
+    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+
+    <!-- Intrgrate Model -->
+    <script type="text/javascript" src="Scripts/lib.integrate.js"></script>
+
+    <!-- Extend -->
+    <script type="text/javascript" src="Scripts/lib.gm.extend.InfoBubble.js"></script>
+
+    <script>
+    //基本模組
+    var Map = new Map();
+    $().ready(function(){
+        Map.set_platform('tgos'); 
+        Map.set_map_selector('#map_canvas');
+        Map.build();
+    });
+
+    var i ;
+    //使用
+    $().ready(function(){
+
+        //新增坐標
+        $('#btnAddMarker').click(function(){
+            i = Map._op.addMarker(120.9577, 23.445);
+        });
+
+        $('#btnRemoveMarker').click(function(){
+            Map._op.removeMarker(i);
+        });
+
+    });
+
+    </script>
+    <style type="text/css">
+    #map_canvas { width: 100%; height: 600px; }
+    </style>
+</head>
+<body>
+
+    <script>
+    document.addEventListener("keyup", function(e){
+        if(e.keyCode == 13) {
+            
+        }
+    });
+    </script>
+
+    
+    <div id="map_canvas">
+    </div>
+
+    <button id="btnAddMarker">新增中心點坐標</button>
+    <button id="btnRemoveMarker">移除中心點坐標</button>
+</html>
