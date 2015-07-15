@@ -17,12 +17,14 @@
     //基本模組
     var Map = new Map();
     $().ready(function(){
-        Map.set_platform('tgos'); 
+        Map.set_platform('google'); 
         Map.set_map_selector('#map_canvas');
         Map.build();
     });
 
     var i ;
+    var p ;
+
     //使用
     $().ready(function(){
 
@@ -31,11 +33,71 @@
             i = Map._op.addMarker(120.9577, 23.445);
         });
 
+        //移除坐標
         $('#btnRemoveMarker').click(function(){
             Map._op.removeMarker(i);
         });
 
+        //新增點位
+            p = Map._op.point(120.9577, 23.445);
+            console.log(p);
+        });
+
+        //設定地圖中央點
+        $('#btnSetCenter').click(function(){
+            var centerPoint = Map._op.point(121.533012, 25.042385);
+            Map._op.setMapCenter(centerPoint);
+        });
+
+        //平移地圖至坐標X
+        $('#btnPanTo').click(function(){
+            var point = Map._op.point(121.533012, 25.042385);
+            Map._op.panTo(point);
+        });
+
+        //放置標記並綁定訊息視窗
+        $('#btnAddBubble').click(function(){
+
+            var x = 120.83587646484375 ;
+            var y = 23.19086257687362 ;
+            var point = Map._op.point(x, y);
+            var MarkerId = Map._op.addMarker(x, y);
+            var content = CreateBubbleContent('Neil', 'Derrick', 3.17, 1, "", 0); //採用客製化函數
+
+            Map._op.addBubble(Map._op._markers[MarkerId], content, 'SelectedBubble');
+
+        });
+
     });
+
+    //客製化氣泡視窗內容
+    function CreateBubbleContent(author, name, dDistance, SurveyPID, MainImage, Type)
+    {
+        //檢查是否有圖片
+        var ImageTag;
+        if (MainImage == "") 
+            ImageTag ='<img src="../../Images/Layout/NO_PIC.jpg" width="110px"  height="70px" />';
+        else 
+            if (Type == 0) 
+                ImageTag = '<img src="' + MainImage + '" width="110px"  height="70px" />';
+            else
+                ImageTag = '<img src="../../Uploads/UploadSurveyImagesFiles/' + SurveyPID + '/' + MainImage + '" width="110px"  height="70px" />';
+
+        //建立氣泡內容
+        var _content =  '<table border="0" width="300" cellpadding="0" cellspacing="0">' +
+                        '<tr><td colspan="2" class="bubble_bg_name">' +
+                        '<span class="bubble_name">' + name + '</span>' +
+                        '</td></tr>' +
+                        '<tr><td style=\" text-align: center;\">' + ImageTag + '</td><td>' +
+                        '<table><tr><td width="70"><span class="bubble_author">提供者</span></td>' +
+                            '<td>' + author + '</td></tr>' +
+                        '<tr><td><span class="bubble_date">距離</span></td>' +
+                            '<td>' + dDistance + ' 公里</td></tr></table>' +
+                            '</td></tr>' +
+                        '</table>';
+
+        return _content;
+    }
 
     </script>
     <style type="text/css">
@@ -43,19 +105,13 @@
     </style>
 </head>
 <body>
-
-    <script>
-    document.addEventListener("keyup", function(e){
-        if(e.keyCode == 13) {
-            
-        }
-    });
-    </script>
-
     
-    <div id="map_canvas">
-    </div>
+    <div id="map_canvas"></div>
 
-    <button id="btnAddMarker">新增中心點坐標</button>
-    <button id="btnRemoveMarker">移除中心點坐標</button>
+    <button id="btnAddMarker">新增坐標</button>
+    <button id="btnRemoveMarker">移除坐標</button>
+    <button id="btnAddPoint">建立點位(於Console)</button>
+    <button id="btnSetCenter">設定地圖中央點</button>
+    <button id="btnPanTo">平移目標</button>
+    <button id="btnAddBubble">放置標記並綁定訊息視窗</button>
 </html>
