@@ -69,6 +69,12 @@
 
         });
 
+        //尋找地址
+        $('#btnAddress').click(function(){
+            var text = $('#txtLocation').val();
+            
+        });
+
     });
 
     //客製化氣泡視窗內容
@@ -115,4 +121,6 @@
     <button id="btnSetCenter">設定地圖中央點</button>
     <button id="btnPanTo">平移目標</button>
     <button id="btnAddBubble">放置標記並綁定訊息視窗</button>
+    <input type="text" id="txtLocation"><button id="btnAddress">搜尋地址</button>
+
 </html>

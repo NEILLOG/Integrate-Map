@@ -1,3 +1,10 @@
+/*-------------------------
+	Map Integrate Plugin
+	Last Update : 20150717
+	Version : v1.12
+	Auth : Neil Chang
+-------------------------*/
+
 function Map(){
 
 	/*---------------------私有變數定義---------------------*/
@@ -172,6 +179,31 @@ function Map(){
 
 		return id;
 	}
+
+	//** 建立模式切換超連結
+	this.createChangePanel = function(id) {
+		var link = location.search;
+		var linkElement = $('<a></a>') ;
+
+		if(link != "undefined" || link != "")
+			link += "&";
+
+		switch(this._platform)
+		{
+			case 'google' : link += "map=tgos"; break; //與目前使用的相反
+			case 'tgos' : link += "map=google"; break;
+		}
+
+		//加入現有 QueryString 
+		linkElement.prop('href', link);
+
+		//若使用者有指定 ID，則加入
+		id = typeof id !== 'undefined' ? id : '';
+		if(id != '') 
+			linkElement.prop('id', id);
+
+		return linkElement;
+	}
 }
 
 //** 載入Google Map 
@@ -247,6 +279,7 @@ function classGoogleMap(map){
 	}
 
 	//** 將標記綁定資訊視窗
+	// id : optional
 	this.addBubble = function (marker, content, id) {
 
 		var Parent = this;
@@ -278,6 +311,33 @@ function classGoogleMap(map){
 		    });
 		}
 	}
+
+	//** 地址搜尋
+	/*this.findLocation = function(address){
+		 var geocoder = new Map._core.maps.Geocoder();
+		 geocoder.geocode({ 'address': address }, function (results, status) {
+	        if (status == Map._core.maps.GeocoderStatus.OK) {
+
+	        	//回傳點位
+	            var point = results[0].geometry.location;
+
+	            //設定地圖中心
+	            this.setMapCenter(point);
+
+	            //設定該座標之唯一索引
+	            var id = "AddressResult";
+
+	            //移除上一次搜尋記錄
+	            this.removeMarker(id);
+
+	            this.addMarker()
+
+	            $('#txtLat').val(ResultLatLng.lat()); //緯度
+	            $('#txtLon').val(ResultLatLng.lng()); //經度
+
+	        } else alert('找不到此地址資訊!');
+	    });
+	}*/
 }
 
 //----------------------------------------------------------------------------------------------------------
