@@ -17,9 +17,20 @@
     //基本模組
     var Map = new Map();
     $().ready(function(){
-        Map.set_platform('google'); 
+
+        var arg = getParameterByName('map');
+        var platform = (arg != '') ? arg : 'google';
+
+        Map.set_platform(platform); 
         Map.set_map_selector('#map_canvas');
         Map.build();
+
+        setTimeout(function(){
+
+            var switchPanel = Map._op.createChangePanel();
+            $('body').append(switchPanel);
+
+        }, 1000);
     });
 
     var i ;
@@ -77,7 +88,7 @@
 
     });
 
-    //客製化氣泡視窗內容
+    //客製化 : 氣泡視窗內容
     function CreateBubbleContent(author, name, dDistance, SurveyPID, MainImage, Type)
     {
         //檢查是否有圖片
@@ -122,5 +133,7 @@
     <button id="btnPanTo">平移目標</button>
     <button id="btnAddBubble">放置標記並綁定訊息視窗</button>
     <input type="text" id="txtLocation"><button id="btnAddress">搜尋地址</button>
+
+
 
 </html>

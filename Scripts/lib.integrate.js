@@ -181,26 +181,74 @@ function Map(){
 	}
 
 	//** 建立模式切換超連結
-	this.createChangePanel = function(id) {
-		var link = location.search;
+	this.createChangePanel = function(CSSid , CSSClass) {
+		var link = location.search; //全域
 		var linkElement = $('<a></a>') ;
+		var newLinks = new Array();
 
-		if(link != "undefined" || link != "")
-			link += "&";
+		//現有GET分割
+		var arrLinks = link.split('?');
+			if(arrLinks.length > 1)
+			{
+				arrLinks = arrLinks[1].split('&');
+			}
 
-		switch(this._platform)
+		//判斷地圖參數(map)是否存在於GET
+		var existMapArg = getParameterByName('map');
+		if(existMapArg != '')
 		{
-			case 'google' : link += "map=tgos"; break; //與目前使用的相反
-			case 'tgos' : link += "map=google"; break;
+			//若原先已有，則進行參數值替換即可
+			for(var i = 0 ; i < arrLinks.length; i++) 
+			{
+				var r = arrLinks[i].split('=') ;
+				console.log(r);
+				if(r[0] != 'map') continue;
+				
+				//與目前使用的相反
+				switch(r[1])
+				{
+					case 'google' : r[1] = "tgos"; break; 
+					case 'tgos' :   r[1] = "google"; break;
+				}//end switch
+
+				arrLinks.splice(i, 1); //移除舊的 map 參數
+				arrLinks.push(r.join('=')); //加入新的 map 參數
+			}//end for
+
+			//組合結果
+			link = "?" + arrLinks.join('&');
+
+		} else {
+			//若原本沒有，則直接加上參數
+			link += (link == "") ? "?" : "&" ; //依照參數個數狀況給予
+
+			//與目前使用的相反
+			switch(Map._platform)
+			{
+				case 'google' : link += "map=tgos"; break; 
+				case 'tgos' :   link += "map=google"; break;
+			}
 		}
 
-		//加入現有 QueryString 
-		linkElement.prop('href', link);
+		//與目前使用的相反
+		switch(Map._platform)
+		{
+			case 'google' : linkElement.text('切換至 TGOS 地圖'); break; 
+			case 'tgos' : linkElement.text('切換至 Google Map 地圖'); break;
+		}
 
-		//若使用者有指定 ID，則加入
-		id = typeof id !== 'undefined' ? id : '';
-		if(id != '') 
-			linkElement.prop('id', id);
+		//建立超連結
+		linkElement.prop('href',  link);
+
+		//若使用者有指定 CSS id，則加入
+		CSSid = typeof CSSid !== 'undefined' ? CSSid : '';
+		if(CSSid != '') 
+			linkElement.prop('id', CSSid);
+
+		//若使用者有指定 CSS class，則加入
+		CSSClass = typeof CSSClass !== 'undefined' ? CSSClass : '';
+		if(CSSClass != '') 
+			linkElement.prop('class', CSSClass);
 
 		return linkElement;
 	}
@@ -215,6 +263,14 @@ function LoadGoogleMapAPI(){
         mapTypeId: Map._core.maps.MapTypeId.ROADMAP
     };
     Map._map = new Map._core.maps.Map($(Map._map_selector)[0], options); //須轉換為 dom obj
+}
+
+//通用函數 : 取得特定網址列參數
+function getParameterByName(name) {
+    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+    results = regex.exec(location.search);
+    return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
 }
 
 //-------------------------------------------------------------------------------------------------------------
