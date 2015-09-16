@@ -1,8 +1,14 @@
 /*-------------------------
 	Map Integrate Plugin
-	Last Update : 20150717
-	Version : v1.12
+	Last Update : 20150916
+	Version : v1.4
 	Auth : Neil Chang
+	----更新日誌---
+	20150916	v1.4	修正新增TGOS氣泡視窗事件
+	20150824	v1.30	新增地圖監控事件新增(限定zoom_changed)/修正氣泡視窗長寬
+	20150806 	v1.21 	新增標記點取座標函數
+	20150806	v1.2 	新增地址搜尋服務
+	20150714	v1.12 	新增地圖模式切換
 -------------------------*/
 
 function Map(){
@@ -92,7 +98,7 @@ function Map(){
 		};*/
 	}
 
-	/*------------------工用函數--------------------*/
+	/*------------------公用函數--------------------*/
 	//** 初始化地圖並載入DOM	
 	this.loadDOM = function (map_selecrot, platform, core){
 		
@@ -355,8 +361,8 @@ function classGoogleMap(map){
 		            backgroundClassName: 'aBubble',
 		            shadowStyle: 1,
 		            padding: 0,
-		            maxWidth: 300,
-		            minHeight: 110,
+		            maxWidth: 400,
+		            minHeight: 130,
 		            content: content,
 		            map: Map._map
 		        }); 
@@ -369,31 +375,57 @@ function classGoogleMap(map){
 	}
 
 	//** 地址搜尋
-	/*this.findLocation = function(address){
+	this.findLocationAndMarkIt = function(address){
 		 var geocoder = new Map._core.maps.Geocoder();
 		 geocoder.geocode({ 'address': address }, function (results, status) {
 	        if (status == Map._core.maps.GeocoderStatus.OK) {
+	        	console.log(results);
 
-	        	//回傳點位
-	            var point = results[0].geometry.location;
+	            var point = results[0].geometry.location; //只針對第一個搜尋結果
+				var id = "LocationServiceResult"; //設定該座標之唯一索引
 
-	            //設定地圖中心
-	            this.setMapCenter(point);
+	            Map._op.setMapCenter(point); //設定地圖中心
+	            
+	            Map._op.removeMarker(id);
+	            Map._op.addMarker(point.lng(), point.lat(), id); //移除上一次搜尋記錄
 
-	            //設定該座標之唯一索引
-	            var id = "AddressResult";
-
-	            //移除上一次搜尋記錄
-	            this.removeMarker(id);
-
-	            this.addMarker()
-
-	            $('#txtLat').val(ResultLatLng.lat()); //緯度
-	            $('#txtLon').val(ResultLatLng.lng()); //經度
-
-	        } else alert('找不到此地址資訊!');
+	        } else {
+	        	var ErrMsg = "";
+	        	switch(status)
+	        	{
+	        		case Map._core.maps.GeocoderStatus.ZERO_RESULTS : 		ErrMsg = "此地標查無資料，請重新查詢"; break;
+	        		case Map._core.maps.GeocoderStatus.OVER_QUERY_LIMIT : 	ErrMsg = "短時間內網頁發出太多的定位，請稍候重試"; break;
+	        		case Map._core.maps.GeocoderStatus.REQUEST_DENIED : 	ErrMsg = "網頁不允許使用定位服務。，請稍候重試"; break;
+	        		case Map._core.maps.GeocoderStatus.INVALID_REQUEST : 	ErrMsg = "要求無效，請稍候重試"; break;
+	        		case Map._core.maps.GeocoderStatus.UNKNOWN_ERROR : 		ErrMsg = "伺服器錯誤，請稍候重試"; break;
+	        	}
+	        	alert(ErrMsg);
+	        }
 	    });
-	}*/
+	}
+
+	//** 取得標記點之經緯度座標
+	this.getMarkerPosition = function(marker, target){
+		if(marker == "undefined") 
+			console.warn('注意 : 標記格式錯誤，請檢查標記是否已存在。');
+		else {
+			switch(target)
+			{
+				case 'lat' : return marker.position.lat(); break;
+				case 'lon' : return marker.position.lng(); break;
+				default: 
+					console.warn('注意 : 目標格式錯誤，請檢查參數。');
+					return 0;
+					break;
+			}
+		}
+	}
+
+	//** 設定地圖事件
+	this.setMapEvent = function(handler){
+		Map._map.addListener('zoom_changed', handler);
+	}
+
 }
 
 //----------------------------------------------------------------------------------------------------------
@@ -424,7 +456,7 @@ function classTGOS(){
 	//** 新增標記
 	// arg : id > 指定特定 id
 	// return : new id
-	classTGOS.prototype.addMarker = function (Lon, Lat, id) 
+	this.addMarker = function (Lon, Lat, id) 
 	{
 		id = this.generateID(id, 'marker');
 		
@@ -461,54 +493,141 @@ function classTGOS(){
 		    var point = marker.getPosition();
 		    var options = {	//設定訊息視窗參數
 		        pixelOffset: new TGOS.TGSize(12, -26), 	//訊息視窗錨點平移量
-		        maxWidth: 600							//訊息視窗最大寬度限制
+		        maxWidth: 400							//訊息視窗最大寬度限制
 		    };
 
 		    //建立訊息視窗
 		    var infoBubble = new Map._core.TGInfoWindow(content, point, options);
 
+			Parent._bubbles[id] = infoBubble; //存入集合
+
+			//點擊 Marker 後，開啟 InfoWindow
 		    Map._core.TGEvent.addListener(marker, "click", function () {
 
 		    	//避免重複開啟一樣的
-		        if (Parent._bubbles[id] != undefined)
-		            Parent._bubbles[id].close();
+		        if (Parent._bubbles[Parent._id_OpeningWindow] != undefined)
+		            Parent._bubbles[Parent._id_OpeningWindow].close();
 
-				Parent._bubbles[id] = infoBubble; //存入集合
+		        Parent._id_OpeningWindow = id;
+
+			
 
 		        infoBubble.open(Map._map); 
 		        
 		    });
+
+		    return id;
 		}
 
 	}
 
 	//** 重新取得邊界(TGOS獨有函數)
-	this.fitBound = function (markers)
+	this.fitBound = function (datas, type)
 	{
 	    var X_Maxs = 0;     //X 最大值
 	    var X_Mins = 1000;  //X 最小值(因經度永遠小於1000，故做為第一個值的判斷加入使用)
 	    var Y_Maxs = 0;     //Y 最大值
 	    var Y_Mins = 1000;  //Y 最小值(因緯度永遠小於1000，故做為第一個值的判斷加入使用)
 	   
-	    //第一次過濾，取得極值
-	    for (var i = 0; i < markers.length; i++)
-	        if (markers[i].getPosition().x > X_Maxs)
-	            X_Maxs = markers[i].getPosition().x;
+	    switch(type)
+	    {
+	    	case 'marker' :
+			    for (var i = 0; i < datas.length; i++)
+			        if (datas[i].getPosition().x > X_Maxs)
+			            X_Maxs = datas[i].getPosition().x;
 
-	    for (var i = 0; i < markers.length; i++)
-	        if (markers[i].getPosition().x < X_Mins)
-	            X_Mins = markers[i].getPosition().x;
+			    for (var i = 0; i < datas.length; i++)
+			        if (datas[i].getPosition().x < X_Mins)
+			            X_Mins = datas[i].getPosition().x;
 
-	    for (var i = 0; i < markers.length; i++)
-	        if (markers[i].getPosition().y > Y_Maxs)
-	            Y_Maxs = markers[i].getPosition().y;
+			    for (var i = 0; i < datas.length; i++)
+			        if (datas[i].getPosition().y > Y_Maxs)
+			            Y_Maxs = datas[i].getPosition().y;
 
-	    for (var i = 0; i < markers.length; i++)
-	        if (markers[i].getPosition().y < Y_Mins)
-	            Y_Mins = markers[i].getPosition().y;
+			    for (var i = 0; i < datas.length; i++)
+			        if (datas[i].getPosition().y < Y_Mins)
+			            Y_Mins = datas[i].getPosition().y;
+			    break;
+
+			case 'point' :
+			    for (var i = 0; i < datas.length; i++)
+			        if (datas[i].x > X_Maxs)
+			            X_Maxs = datas[i].x;
+
+			    for (var i = 0; i < datas.length; i++)
+			        if (datas[i].x < X_Mins)
+			            X_Mins = datas[i].x;
+
+			    for (var i = 0; i < datas.length; i++)
+			        if (datas[i].y > Y_Maxs)
+			            Y_Maxs = datas[i].y;
+
+			    for (var i = 0; i < datas.length; i++)
+			        if (datas[i].y < Y_Mins)
+			            Y_Mins = datas[i].y;
+			    break;
+		}
+
 
 	    //console.log(X_Maxs, X_Mins, Y_Maxs, Y_Mins);
 	    return new TGOS.TGEnvelope(X_Mins, Y_Maxs, X_Maxs, Y_Mins);
 	}
-}
 
+	//** 地標搜尋
+	// return : Location Point
+	this.findLocationAndMarkIt = function(address){
+		var LService 		= new Map._core.TGLocateService(); 
+		var request_poi 	= { poi: address };
+		var request_address = { address: address };
+		var isSearchSuccess = true;
+
+		//第一次嘗試，使用地標搜尋(非同步執行)
+        LService.locateWGS84(request_poi, function(result, status){
+        	console.log(result);
+			if (status == 'OK')	{
+				var point = result[0].geometry.location; //只針對第一個地點打點 
+	            var id = "LocationServiceResult"; //設定該座標之唯一索引
+
+				Map._op.removeMarker(id);
+				Map._op.addMarker(point.x, point.y, id);
+			}
+			else {
+				var ErrMsg = "";
+				switch(status)
+				{
+					case Map._core.TGLocatorStatus.ERROR : 				ErrMsg = "與伺服器溝通有誤，請稍候重試"; break;
+					case Map._core.TGLocatorStatus.INVALID_REQUEST : 	ErrMsg = "要求無效，請稍候重試"; break;
+					case Map._core.TGLocatorStatus.OVER_QUERY_LIMIT : 	ErrMsg = "短時間內網頁發出太多的定位，請稍候重試"; break;
+					case Map._core.TGLocatorStatus.REQUEST_DENIED : 	ErrMsg = "網頁不允許使用定位服務。，請稍候重試"; break;
+					case Map._core.TGLocatorStatus.UNKNOWN_ERROR : 		ErrMsg = "伺服器錯誤，請稍候重試"; break;
+					case Map._core.TGLocatorStatus.ZERO_RESULTS : 		ErrMsg = "此地標查無資料，請重新查詢"; break;
+					case Map._core.TGLocatorStatus.TOO_MANY_RESULTS : 	ErrMsg = "結果過多，請使用更為精確之地標關鍵字"; break;
+				}
+				alert(ErrMsg);
+			}				
+		});
+	}
+
+	//** 取得標記點之經緯度座標
+	this.getMarkerPosition = function(marker, target){
+		if(marker == "undefined") 
+			console.warn('注意 : 標記格式錯誤，請檢查標記是否已存在。');
+		else {
+			switch(target)
+			{
+				case 'lat' : return marker.position.y; break;
+				case 'lon' : return marker.position.x; break;
+				default: 
+					console.warn('注意 : 目標格式錯誤，請檢查參數。');
+					return 0;
+					break;
+			}
+		}
+	}
+
+	//** 設定地圖事件
+	this.setMapEvent = function(handler){
+		Map._core.TGEvent.addListener(Map._map, 'zoom_changed', handler);
+	}
+
+}
